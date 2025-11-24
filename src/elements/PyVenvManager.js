@@ -12,10 +12,7 @@ const PyVenvManager = () => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [deletingEnv, setDeletingEnv] = useState(null);
 
-	//const devUrl = config.production.dashboard_url;
-	//const prodUrl = config.production.dashboard_url;
-	//const curUrl = get_base_url();
-	const curUrl = config.production.dashboard_url;
+	const curUrl = get_base_url();
 
   const fetchEnvs = async () => {
 	try {
@@ -32,15 +29,15 @@ const PyVenvManager = () => {
 			throw new Error(errorString);
 		}
 		const envJson = await envResponse.json();
-		console.log("envJson:", envJson)
+		// console.log("envJson:", envJson)
 		if (envJson.environments.length == 0) {
 			await setEnvsLoading(false);
 			await setEnvData("NO ENVIRONMENTS");
 			await setEnvKeys(null);
 			return;
 		}
-		console.log("made it past length 0 statement");
-		console.log(envJson.environments[0].GCCcore_version);
+		// console.log("made it past length 0 statement");
+		// console.log(envJson.environments[0].GCCcore_version);
 		await setEnvData(envJson.environments);
 		
 		// This is a hack bc I'm not getting the json object in the same order as list_envs's output
@@ -129,10 +126,12 @@ const PyVenvManager = () => {
 				<tbody>
 					{envData.map((env) => (
 						<tr key={env.name}>
+							<td className="border border-gray-300 px-4 py-2">{env.group}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.name}</td>
-							<td className="border border-gray-300 px-4 py-2">{env.python_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.GCCcore_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.description}</td>
+							<td className="border border-gray-300 px-4 py-2">{env.owner}</td>
+							<td className="border border-gray-300 px-4 py-2">{env.python_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.toolchain}</td>
 							<td className="border border-gray-300 px-4 py-2"> 
 								<button className="bg-maroon text-white px-2 py-1 rounded hover:bg-red-700"

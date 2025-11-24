@@ -314,8 +314,8 @@ def get_envs():
             return jsonify({"environments": []}), 200
         with open(metadataPath,'r') as file:
             metadata = json.load(file)
-            #return metadata, 200
             return jsonify(metadata), 200
+    
     except json.JSONDecodeError as e:
         return jsonify({"error": f"The metadata file is corrupted or not in JSON format: {str(e)}"}), 500
     except Exception as e:
@@ -326,13 +326,10 @@ def delete_env(envToDelete):
     try:
         if "SCRATCH" not in os.environ:
             os.environ["SCRATCH"] = os.path.expandvars("/scratch/user/$USER")
-        script = f"/sw/local/bin/delete_venv"
-        result = subprocess.run([script, envToDelete], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-        if result.returncode != 0:
-            raise RuntimeError(f"Error deleting environment: {result.stdout.strip()}")
+            
+        result = subprocess.run(['/sw/local/bin/delete_venv', envToDelete], input='y\n', capture_output=True, text=True)
+
         return jsonify({"message": result.stdout.strip()}), 200
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": f"delete_venv script failed with error: {e.stdout.strip()}"}), 500
     except Exception as e:
         return jsonify({"error": f"There was an unexpected error deleting the environment: {str(e)}"}), 500
 
@@ -660,7 +657,6 @@ def get_user_jobs():
 
 # API to cancel a job
 @api.route("/cancel_job/<job_id>", methods=["POST"])
-@api.route("/cancel_job/<job_id>/", methods=["POST"])
 def cancel_job(job_id):
     try:
         result = subprocess.run(
