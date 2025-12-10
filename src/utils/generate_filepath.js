@@ -34,7 +34,7 @@ export function generate_file_explorer_path_for_jobs(job) {
       }}
       href={fullUrl}
     >
-      {job.job_id}
+      {job.submit_dir}
     </a>
   );
 }

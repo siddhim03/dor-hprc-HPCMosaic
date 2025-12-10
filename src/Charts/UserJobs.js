@@ -110,12 +110,13 @@ const UserJobs = () => {
         <table className="table-auto w-full border-collapse border border-gray-300 rounded-lg shadow-sm">
           <thead>
             <tr className="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+              <th className="border border-gray-300 px-4 py-2">Location</th>
               <th className="border border-gray-300 px-4 py-2">Job ID</th>
               <th className="border border-gray-300 px-4 py-2">Job Name</th>
               <th className="border border-gray-300 px-4 py-2">State</th>
               <th className="border border-gray-300 px-4 py-2">CPUs</th>
               <th className="border border-gray-300 px-4 py-2">Nodes</th>
-              <th className="border border-gray-300 px-4 py-2">Walltime (Time elapsed / Time requested)</th>
+              <th className="border border-gray-300 px-4 py-2">Time Elapsed</th>
               <th className="border border-gray-300 px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -124,6 +125,9 @@ const UserJobs = () => {
               <tr key={job.job_id} className="border-b border-gray-200">
                 <td className="py-3 px-4">
                     {generate_file_explorer_path_for_jobs(job)}
+                </td>
+                <td className="py-3 px-4">
+                    {job.job_id}
                 </td>
                 <td className="py-3 px-4">
                     {job.job_name}
