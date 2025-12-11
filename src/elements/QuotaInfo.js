@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import config from "../../config.yml";
-import Spinner from "../Components/Spinner";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css"; // Default tooltip styling
-import ElementDescriptions from "../Components/ElementDescriptions";
-import QuotaButton from "../Charts/QuotaButton"; // Import QuotaButton component
+import ElementDescriptions from "../framework/ElementDescriptions";
+import Spinner from "../framework/Spinner";
+import QuotaButton from "./QuotaButton"; // Import QuotaButton component
 import { generate_file_explorer_path_for_disk } from '../utils/generate_filepath';
-
+import { get_base_url } from "../utils/api_config.js"
 
 const QuotaInfo = () => {
   const [quotaData, setQuotaData] = useState([]);
   const [additionalText, setAdditionalText] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const baseUrl = config.production.dashboard_url;
+  const baseUrl = get_base_url();
 
   // Conversion factor for units
   const unitMultipliers = {

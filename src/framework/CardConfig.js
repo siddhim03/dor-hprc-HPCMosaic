@@ -1,30 +1,31 @@
 import React from "react";
 import { AiOutlineCluster, AiOutlineDatabase, AiOutlineUser, AiOutlineCode, AiOutlinePieChart, AiOutlineProject } from "react-icons/ai";
 import Card from "./Card";
-import ClusterInfo from "../Charts/ClusterInfo";
-import PyVenvManager from "../Charts/PyVenvManager";
-import QuotaInfo from "../Charts/QuotaInfo";
-import UserGroups from "../Charts/UserGroups";
-import Accounts from "../Charts/Accounts";
-import UserJobs from "../Charts/UserJobs";
-import QuotaButton from '../Charts/QuotaButton';
-import Composer from '../Charts/Composer';
+import ClusterInfo from "../elements/ClusterInfo";
+import PyVenvManager from "../elements/PyVenvManager";
+import QuotaInfo from "../elements/QuotaInfo";
+import UserGroups from "../elements/UserGroups";
+import Accounts from "../elements/Accounts";
+import UserJobs from "../elements/UserJobs";
+import QuotaButton from '../elements/QuotaButton';
+import Composer from '../elements/Composer';
 import ElementDescriptions from "./ElementDescriptions"; // Import descriptions
-import Chatbot from '../Charts/Chatbot';
+import Chatbot from '../elements/Chatbot';
+import AcknowledgementForm from '../elements/AcknowledgementForm';
 
 const CardConfig = {
     "Node Utilization": {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="Node Utilization" title="Node Utilization" 
-                description={ElementDescriptions["Node Utilization"]} 
+            <Card {...props} name="Node Utilization" title="Node Utilization"
+                description={ElementDescriptions["Node Utilization"]}
                 icon={<AiOutlineCluster size={30} />} />
         )),
         chartComponent: ClusterInfo,
     },
     PyVenvManager: {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="PyVenvManager" title="Python Venv Manager" 
-                description={ElementDescriptions.PyVenvManager} 
+            <Card {...props} name="PyVenvManager" title="Python Venv Manager"
+                description={ElementDescriptions.PyVenvManager}
                 icon={<AiOutlineCode size={30} />} />
         )),
         chartComponent: PyVenvManager,
@@ -47,35 +48,43 @@ const CardConfig = {
     // },
     "Quota Info": {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="Quota Info" title="Quota Information" 
-                description={ElementDescriptions["Quota Info"]} 
+            <Card {...props} name="Quota Info" title="Quota Information"
+                description={ElementDescriptions["Quota Info"]}
                 icon={<AiOutlinePieChart size={30} />} />
         )),
         chartComponent: QuotaInfo,
     },
     "User Groups": {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="User Groups" title="User Groups" 
-                description={ElementDescriptions["User Groups"]} 
+            <Card {...props} name="User Groups" title="User Groups"
+                description={ElementDescriptions["User Groups"]}
                 icon={<AiOutlineUser size={30} />} />
         )),
         chartComponent: UserGroups,
     },
     Accounts: {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="Accounts" title="Accounts" 
-                description={ElementDescriptions.Accounts} 
+            <Card {...props} name="Accounts" title="Accounts"
+                description={ElementDescriptions.Accounts}
                 icon={<AiOutlineDatabase size={30} />} />
         )),
         chartComponent: Accounts,
     },
     "User Jobs": {
         cardComponent: React.memo((props) => (
-            <Card {...props} name="User Jobs" title="User Jobs" 
-                description={ElementDescriptions["User Jobs"]} 
+            <Card {...props} name="User Jobs" title="User Jobs"
+                description={ElementDescriptions["User Jobs"]}
                 icon={<AiOutlineProject size={30} />} />
         )),
         chartComponent: UserJobs,
+    },
+    AcknowledgementForm: {
+        cardComponent: React.memo((props) => (
+            <Card {...props} name="AcknowledgementForm" title="Acknowledgement Form"
+                description={ElementDescriptions["Acknowledgement Form"]}
+                icon={<AiOutlineCode size={30} />} />
+        )),
+        chartComponent: AcknowledgementForm,
     },
 };
 

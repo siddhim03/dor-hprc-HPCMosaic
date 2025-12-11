@@ -1,7 +1,8 @@
 import React, {useState, useEffect} from 'react'
 import config from '../../config.yml';
 import CreateVenvForm from "./CreateVenvForm.js"
-import Spinner from "../Components/Spinner.js"
+import Spinner from "../framework/Spinner.js"
+import { get_base_url } from "../utils/api_config.js"
 
 const PyVenvManager = () => {
   
@@ -11,10 +12,7 @@ const PyVenvManager = () => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [deletingEnv, setDeletingEnv] = useState(null);
 
-	const devUrl = config.production.dashboard_url;
-	//   const prodUrl = `${window.location.origin}/pun/sys/dor-hprc-web-tamudashboard-reu-branch`;
-	const prodUrl = config.production.dashboard_url;
-	const curUrl = (process.env.NODE_ENV == 'development') ? devUrl : prodUrl;
+	const curUrl = get_base_url();
 
   const fetchEnvs = async () => {
 	try {
@@ -31,15 +29,15 @@ const PyVenvManager = () => {
 			throw new Error(errorString);
 		}
 		const envJson = await envResponse.json();
-		console.log("envJson:", envJson)
+		// console.log("envJson:", envJson)
 		if (envJson.environments.length == 0) {
 			await setEnvsLoading(false);
 			await setEnvData("NO ENVIRONMENTS");
 			await setEnvKeys(null);
 			return;
 		}
-		console.log("made it past length 0 statement");
-		console.log(envJson.environments[0].GCCcore_version);
+		// console.log("made it past length 0 statement");
+		// console.log(envJson.environments[0].GCCcore_version);
 		await setEnvData(envJson.environments);
 		
 		// This is a hack bc I'm not getting the json object in the same order as list_envs's output
@@ -128,10 +126,12 @@ const PyVenvManager = () => {
 				<tbody>
 					{envData.map((env) => (
 						<tr key={env.name}>
+							<td className="border border-gray-300 px-4 py-2">{env.group}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.name}</td>
-							<td className="border border-gray-300 px-4 py-2">{env.python_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.GCCcore_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.description}</td>
+							<td className="border border-gray-300 px-4 py-2">{env.owner}</td>
+							<td className="border border-gray-300 px-4 py-2">{env.python_version}</td>
 							<td className="border border-gray-300 px-4 py-2">{env.toolchain}</td>
 							<td className="border border-gray-300 px-4 py-2"> 
 								<button className="bg-maroon text-white px-2 py-1 rounded hover:bg-red-700"
@@ -162,7 +162,7 @@ const PyVenvManager = () => {
 	  }
 	  {(envData == "NO ENVIRONMENTS" && !envKeys) && 
 	  <div className="overflow-auto w-full h-full flex flex-grow flex-col justify-center items-center">	
-		<h2 className="text-xl font-semibold mb-4"> You have no virtual environments to manage </h2>
+		<h2 className="text-xl font-semibold mb-4"> No virtual environments to manage. </h2>
 		<button id="createVenvFormButton" onClick={() => {setIsFormOpen(true)}} 
 			className="bg-maroon text-white rounded-lg p-1 hover:bg-pink-950 m-2">
 				<svg xmlns="http://www.ws.org/2000/svg"

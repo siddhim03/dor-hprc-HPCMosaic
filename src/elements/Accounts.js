@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import config from "../../config.yml";
-import Spinner from "../Components/Spinner";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css"; // Default styling for tooltips
-import ElementDescriptions from "../Components/ElementDescriptions";
+import ElementDescriptions from "../framework/ElementDescriptions";
+import Spinner from "../framework/Spinner";
+import { get_base_url } from "../utils/api_config.js"
 
 const ProjectInfo = () => {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const baseUrl = config.production.dashboard_url;
+  const baseUrl = get_base_url();
 
   // Fetch project info on component mount
   const fetchProjects = () => {

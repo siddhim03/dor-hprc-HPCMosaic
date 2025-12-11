@@ -5,9 +5,9 @@ import Joyride from "react-joyride";
 import "./style.css";
 import SandboxGrid from "./SandboxGrid";
 import { createRoot } from "react-dom/client";
-import ChatbotComponent from "./Components/ChatbotComponent";
+import ChatbotComponent from "./framework/ChatbotComponent";
 import { Toaster } from "react-hot-toast";
-import { useChatbotVisibility, ChatbotVisibilityProvider } from "./Components/ChatbotVisibilityContext"; // Import the context provider
+import { useChatbotVisibility, ChatbotVisibilityProvider } from "./framework/ChatbotVisibilityContext"; // Import the context provider
 
 const App = () => {
   const [runTour, setRunTour] = useState(false);
@@ -95,7 +95,7 @@ const EnhancedChatbotComponent = () => {
   
   //Removed chatbot for now, doesn't work
   return null;
-  /*return <ChatbotComponent />;*/
+  return <ChatbotComponent />;
 };
 
 const root = createRoot(document.getElementById("root"));

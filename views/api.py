@@ -65,7 +65,7 @@ def get_user_email(username):
 
     try:
         mapping_file = "/usr/local/etc/email_mapping.access.login"
-        
+
         if os.path.exists(mapping_file):
             with open(mapping_file, 'r') as f:
                 for line in f:
@@ -110,6 +110,16 @@ hprcbot_route = production.get('hprcbot_route')
 
 api = Blueprint('api', __name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+@api.route('/user-data', methods=['GET'])
+def get_user_data():
+    try:
+        user = os.environ.get('USER', 'unknown')
+        email = get_user_email(user)
+        return jsonify({"user": user, "email": email}), 200
+    except Exception as e:
+        logging.error(f"Failed to fetch user data: {e}")
+        return jsonify({"error": "Unable to fetch user data"}), 500
 
 @api.route('/sinfo', methods=['GET'])
 def get_sinfo():
@@ -301,10 +311,11 @@ def get_envs():
     try:
         # Check if the metadata file exists first, rather than catching in an exception. It is a common case; exceptions should be used for unexpected edge cases, hence the name
         if not os.path.exists(metadataPath):
-            return jsonify({"error": f"There was no metadata file found; user likely has not yet used 'create_venv' to make a virtual environment", "code": f"NO_METADATA"}), 500
+            return jsonify({"environments": []}), 200
         with open(metadataPath,'r') as file:
-            metadata = json.load(file)  
-            return metadata, 200
+            metadata = json.load(file)
+            return jsonify(metadata), 200
+    
     except json.JSONDecodeError as e:
         return jsonify({"error": f"The metadata file is corrupted or not in JSON format: {str(e)}"}), 500
     except Exception as e:
@@ -315,13 +326,10 @@ def delete_env(envToDelete):
     try:
         if "SCRATCH" not in os.environ:
             os.environ["SCRATCH"] = os.path.expandvars("/scratch/user/$USER")
-        script = f"/sw/local/bin/delete_venv"
-        result = subprocess.run([script, envToDelete], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-        if result.returncode != 0:
-            raise RuntimeError(f"Error deleting environment: {result.stdout.strip()}")
+            
+        result = subprocess.run(['/sw/local/bin/delete_venv', envToDelete], input='y\n', capture_output=True, text=True)
+
         return jsonify({"message": result.stdout.strip()}), 200
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": f"delete_venv script failed with error: {e.stdout.strip()}"}), 500
     except Exception as e:
         return jsonify({"error": f"There was an unexpected error deleting the environment: {str(e)}"}), 500
 
@@ -350,6 +358,7 @@ def get_py_versions():
         return jsonify({"error": "There was a file error while getting the Python versions; 'captured-output.txt' file was"}), 500
     except Exception as e:
         return jsonify({"error": f"There was an unexpected error while fetching Python versions: {str(e)}"}), 500
+
 @api.route('/create_venv', methods=['POST'])
 def create_venv():
     try:
@@ -363,17 +372,18 @@ def create_venv():
         # When running commands on the flask server machine for this app, you will need to source /etc/profile before using ml/module load
         #createVenvCommand = f"ssh alogin2 source /etc/profile && module load {gccversion} {pyVersion} && /sw/local/bin/create_venv {envName} -d '{descriptio
         createVenvCommand = (
-                f"ssh alogin2 'bash -l -c \"source /etc/profile && "
+                #f"ssh -O StrictJostKeyChecking=no -o UserKnownHostsFile=/dev/null alogin2 'bash -l -c \"source /etc/profile && "
+                f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null alogin2 'bash -l -c \"source /etc/profile && "
                 f"module load {gccversion} {pyVersion} && "
                 f"/sw/local/bin/create_venv {envName} -d \\\"{description}\\\"\"'"
         )
         result = subprocess.run(createVenvCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
         if result.returncode != 0:
-            return jsonify({"error": f"There was an error while creating the virtual environment: {result.stdout}"}), 500
+            return jsonify({"error": f"There was an error while creating the virtual environment: {result.stderr}"}), 500
         return jsonify({"message": f"{envName} was successfully created!"}), 200
     except Exception as e:
         return jsonify({"error": f"There was an unexpected error while creating a new venv: {str(e)}"}), 500
-        
+
 @api.route('/projectinfo', methods=['GET'])
 def get_projectinfo():
     """Retrieve project information and allow querying for job history or pending jobs."""
@@ -433,7 +443,7 @@ def parse_project_accounts(output):
     """Parses output from `myproject` to extract project account details."""
     lines = output.split("\n")
     start_index = next((i for i, line in enumerate(lines) if "|  Account" in line), -1)
-    
+
     if start_index == -1 or len(lines) <= start_index + 2:
         return {"error": "Unexpected output format from myproject"}
 
@@ -473,6 +483,48 @@ def parse_pending_jobs(output):
                 })
 
     return {"pending_jobs": job_data}
+    
+    
+def parse_scontrol_output(output):
+    """Parses output from `scontrol show job <jobid>` to extract job details."""
+    job_info = {}
+
+    # Flatten all lines into space-separated tokens
+    tokens = []
+    for line in output.split("\n"):
+        line = line.strip()
+        if line:
+            tokens.extend(line.split())
+
+    # Map scontrol keys to our desired dictionary keys
+    key_map = {
+        "JobId": "job_id",
+        "JobName": "job_name",
+        "UserId": "user_group",
+        "Account": "user_account",
+        "JobState": "state",
+        "Reason": "reason",
+        "ExitCode": "exit_code",
+        "RunTime": "time_elapsed",
+        "TimeLimit": "time_requested",
+        "StartTime": "start_time",
+        "EndTime": "end_time",
+        "Partition": "partition",
+        "NodeList": "nodelist",
+        "NumNodes": "node_count",
+        "NumCPUs": "cores",
+        "NumTasks": "task_count",
+        "Command": "submit_line",
+        "WorkDir": "submit_dir",
+    }
+
+    for token in tokens:
+        if "=" in token:
+            key, value = token.split("=", 1)
+            if key in key_map:
+                job_info[key_map[key]] = value
+
+    return {"job_details": job_info}
 
 
 def parse_job_history(output):
@@ -487,7 +539,7 @@ def parse_job_history(output):
 
     # Find the start of the data table
     start_index = next((i for i, line in enumerate(lines) if "JobID" in line and "SubmitTime" in line), -1)
-    
+
     if start_index == -1 or len(lines) <= start_index + 1:
         return {"error": "Unexpected output format from myproject"}
 
@@ -520,7 +572,7 @@ def set_default_account():
             return jsonify({"error": "Missing account number"}), 400
 
         command = f"/sw/local/bin/myproject -d {account_no}"
-        
+
         # Log command execution
         logging.info(f"Setting default account with command: {command}")
         print(f"Executing command: {command}")
@@ -563,33 +615,48 @@ def run_command(command):
 @api.route("/jobs", methods=["GET"])
 def get_user_jobs():
     try:
+        jobs = []
+        
+        #get active jobs (squeue)
         result = subprocess.run(
             ["squeue", "-u", os.getenv("USER"), "--format=%i %t %D"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             encoding="utf-8"
         )
-
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip())
-
-        jobs = []
-        lines = result.stdout.strip().split("\n")[1:]  # Skip header
+        lines = result.stdout.strip().split("\n")[1:]
+        
         for line in lines:
             parts = line.split()
             if len(parts) == 3:
+                job_id, state, nodes = parts
+                
+                #running 'scontrol show job <jobid>' to get a single job info
+                myjob_command = subprocess.run(
+                    ["scontrol", "show", "job", job_id], 
+                    stdout = subprocess.PIPE, 
+                    stderr = subprocess.PIPE,
+                    encoding="utf-8",
+                ).stdout
+                job_details_parsed = parse_scontrol_output(myjob_command)["job_details"]
+        
                 jobs.append({
-                    "job_id": parts[0],
-                    "state": parts[1],
-                    "nodes": parts[2],
+                    "job_id": job_id,
+                    "job_name": job_details_parsed.get("job_name"),
+                    "state": state,
+                    "cpus": job_details_parsed.get("cores"),
+                    "nodes": nodes,
+                    "time_requested": job_details_parsed.get("time_requested"),
+                    "time_elapsed": job_details_parsed.get("time_elapsed"),
+                    "submit_dir": job_details_parsed.get("submit_dir"),
                 })
-
-        return jsonify({"jobs": jobs}), 200
+            
+        return jsonify({ "jobs": jobs }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 # API to cancel a job
-@api.route("/cancel_job/<job_id>", methods=["DELETE"])
+@api.route("/cancel_job/<job_id>", methods=["POST"])
 def cancel_job(job_id):
     try:
         result = subprocess.run(
@@ -975,6 +1042,10 @@ def request_help():
 
         # Raw form fields
         help_request_type = request.form.get("helpRequest", "").strip()
+        # This is for the acknowledgement form
+        direct_help_topic = request.form.get("help_topic", "").strip()
+        direct_issue_description = request.form.get("issue_description", "").strip()
+
 
         logging.info(f"Received help request type: {help_request_type} from {user}")
 
@@ -984,7 +1055,7 @@ def request_help():
             "user": user,
             "email": get_user_email(user),
             "cluster_name": cluster_name,
-            "help_topic": help_request_type,
+            "help_topic": help_request_type or direct_help_topic,
             "issue_description": "",
             "error_message": "",
             "job_file_path": "",
@@ -1029,6 +1100,10 @@ def request_help():
         # Other Help
         elif help_request_type == "other":
             params["issue_description"] = request.form.get("otherDescription", "")
+
+        if direct_help_topic == "Other" and direct_issue_description:
+            params["issue_description"] = direct_issue_description
+
 
         logging.info(f"Sending Help request to HPRC Bot: {params}")
 
@@ -1150,5 +1225,49 @@ def request_account_purchase():
         logging.error(f"Error processing account request: {str(e)}")
         return jsonify({
             "error": f"Failed to process your account purchase request: {str(e)}",
+            "status": "failed"
+        }), 500
+
+@api.route('/submit_acknowledgement', methods=['POST'])
+def submit_acknowledgement():
+    try:
+        logging.info("📝 ACKNOWLEDGEMENT SUBMITTED 📝")
+        user = os.environ.get('USER', 'unknown')
+        email = get_user_email(user)
+
+        doi = request.form.get("doi", "").strip()
+        additional_info = request.form.get("additionalInfo", "").strip()
+        timestamp = request.form.get("timestamp", "").strip()
+
+        # Validate that at least one field is provided
+        if not doi and not additional_info:
+            return jsonify({"error": "At least one field (DOI or Additional Information) must be provided"}), 400
+
+        params = {
+            "request_type": "Acknowledgement",
+            "user": user,
+            "email": email,
+            "cluster_name": cluster_name,
+            "doi": doi,
+            "additional_info": additional_info,
+            "timestamp": timestamp
+        }
+
+        logging.info(f"Sending acknowledgement to HPRC Bot: {params}")
+        response = requests.post(f"{hprcbot_route}/HPRCapp/OOD", json=params, timeout=15)
+
+        if response.status_code == 200:
+            logging.info("Acknowledgement successfully submitted to HPRC Bot")
+            return jsonify({
+                "message": "Your acknowledgement has been submitted successfully.",
+                "status": "bot_success"
+            }), 200
+        else:
+            raise Exception(f"HPRC Bot returned non-200: {response.status_code}")
+
+    except Exception as e:
+        logging.error(f"Error processing acknowledgement: {str(e)}")
+        return jsonify({
+            "error": f"Failed to process your acknowledgement: {str(e)}",
             "status": "failed"
         }), 500
