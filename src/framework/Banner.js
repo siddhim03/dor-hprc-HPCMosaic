@@ -157,7 +157,7 @@ const Banner = ({ setRunTour }) => {
   };
 
   useEffect(() => {
-    console.log("Current layout data in Banner:", layoutData);
+    //console.log("Current layout data in Banner:", layoutData);
   }, [layoutData]);
 
   useEffect(() => {

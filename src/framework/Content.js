@@ -87,7 +87,7 @@ const Content = ({ layoutData, setLayoutData, change, getLatestLayout }) => {
   // Listen for changes to layoutData and update the state
   useEffect(() => {
     if (layoutData && Array.isArray(layoutData) && layoutData.length > 0) {
-      console.log("🔄 Updating Content.js with new layoutData:", layoutData);
+      //console.log("🔄 Updating Content.js with new layoutData:", layoutData);
       setRow(layoutData);
       setLayout(layoutData.map(({ i, x, y, w, h, name }) => ({ i, x, y, w, h, name })));
     }
