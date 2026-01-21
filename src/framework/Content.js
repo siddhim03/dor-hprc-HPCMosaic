@@ -330,16 +330,25 @@ const Content = ({ layoutData, setLayoutData, change, getLatestLayout, layoutLoc
             <div
               key={ele.i}
               data-grid={{...ele, minW, minH}}
-              className="resizable-element bg-white rounded-md border border-gray-300 relative h-full w-full overflow-hidden"
+              className={`resizable-element bg-white rounded-md border border-gray-300 relative h-full w-full overflow-hidden ${
+		      layoutLocked
+	                ? 'border-2'
+                        : 'border-gray-300'
+	      }`}
+              style={{
+	        borderColor: layoutLocked ? '#500000' : undefined
+	      }}
             >
-              {/* Clean, elegant remove button */}
-              <button
-                onClick={() => removeElement(index) }
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white bg-opacity-80 hover:bg-red-500 text-gray-500 hover:text-white flex items-center justify-center transition-all duration-100 z-20"
-                title="Remove this element"
-              >
-                <span className="text-sm">✕</span>
-              </button>
+              {/* Clean, elegant remove button - only show when not locked */}
+	      {!layoutLocked && (
+	        <button
+                  onClick={() => removeElement(index) }
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white bg-opacity-80 hover:bg-red-500 text-gray-500 hover:text-white flex items-center justify-center transition-all duration-100 z-20"
+                  title="Remove this element"
+                >
+                  <span className="text-sm">✕</span>
+                </button>
+	      )}
 
               {/* Component content */}
               <div className="h-full w-full p-0">{renderChart(ele)}</div>
